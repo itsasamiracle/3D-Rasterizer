@@ -87,6 +87,29 @@ public static void main(String[] args) {
         }
 
         tris = current;
+
+        double targetRadius = Math.sqrt(30000);
+java.util.Set<Vertex> warped =
+    java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
+for (Square t : tris) {
+    for (Vertex v : new Vertex[]{t.v1, t.v2, t.v3, t.v4}) {
+        if (!warped.add(v)) continue; // already warped this exact object -- skip
+
+        double cx = v.x / 100.0;
+        double cy = v.y / 100.0;
+        double cz = v.z / 100.0;
+
+        double x2 = cx * cx, y2 = cy * cy, z2 = cz * cz;
+        double wx = cx * Math.sqrt(1 - y2 / 2 - z2 / 2 + y2 * z2 / 3);
+        double wy = cy * Math.sqrt(1 - z2 / 2 - x2 / 2 + z2 * x2 / 3);
+        double wz = cz * Math.sqrt(1 - x2 / 2 - y2 / 2 + x2 * y2 / 3);
+
+        v.x = wx * targetRadius;
+        v.y = wy * targetRadius;
+        v.z = wz * targetRadius;
+    }
+}
             //Triangle boilerplate----------------------------------
 
             
@@ -318,16 +341,7 @@ public static void makeMoreTriangles(List<Square> init, List<Square> out)
                 out.add(new Square(m4, center, m3, t.v4, t.color));
             }
 
-       for (Square t : out) {
-                for (Vertex v : new Vertex[]{t.v1, t.v2, t.v3, t.v4}) {
-                    double l = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z) / Math.sqrt(30000);
-                    v.x /= l;
-                    v.y /= l;
-                    v.z /= l;
-                }
-        }
-    
-
+      
 }
 
 
