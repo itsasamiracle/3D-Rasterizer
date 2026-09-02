@@ -77,7 +77,7 @@ public static void main(String[] args) {
         List<Square> current = init;
         List<Square> next = new ArrayList<Square>();
 
-        for (int i = 0; i < 0; i++)
+        for (int i = 0; i < 3; i++)
         {
             next.clear();
             makeMoreTriangles(current, next);
