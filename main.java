@@ -4,7 +4,6 @@ import java.awt.Container;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +16,12 @@ public class main {
     static class RenderPanel extends JPanel {
         int[] indexBuffer;
         int bufferWidth, bufferHeight;
+        // Persists across repaints -- tracks which triangle indices have
+        // been clicked and toggled to earthGreen. Without storing this
+        // outside paintComponent, every repaint (e.g. every slider move)
+        // rebuilds `tris` from scratch and would silently wipe out any
+        // manual color toggles.
+        java.util.Set<Integer> toggledGreen = new java.util.TreeSet<>();
 
 
 
@@ -33,17 +38,20 @@ public static void main(String[] args) {
         BufferedImage img = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_ARGB);
             ArrayList<Square> init = new ArrayList<>();
             //Triangle boilerplate----------------------------------
+            Color earthBlue = new Color(52, 102, 235);
+            Color earthGreen = new Color(14, 204, 52);
+
         init.add(new Square(new Vertex(100, 100, 100),
                         new Vertex(100, 100, -100),
                         new Vertex(100, -100, -100),
                         new Vertex(100, -100, 100), 
-                        Color.WHITE));
+                        earthBlue));
 
         init.add(new Square(new Vertex(-100, 100, 100),
         new Vertex(-100, 100, -100),
         new Vertex(-100, -100, -100),
         new Vertex(-100, -100, 100), 
-        Color.BLUE));
+        earthBlue));
 
 
 
@@ -51,42 +59,74 @@ public static void main(String[] args) {
                         new Vertex(-100, 100, 100),
                         new Vertex(-100, 100, -100),
                         new Vertex(100, 100, -100),
-                        Color.RED));
+                        earthBlue));
 
      init.add(new Square(new Vertex(100, -100, 100),
                         new Vertex(-100, -100, 100),
                         new Vertex(-100, -100, -100),
                         new Vertex(100, -100, -100),
-                        Color.GREEN));
+                        earthBlue));
 
 
      init.add(new Square(new Vertex(100, 100, 100),
                         new Vertex(-100, 100, 100),
                         new Vertex(-100, -100, 100),
                         new Vertex(100, -100, 100),
-                        Color.YELLOW));
+                        earthBlue));
 
     init.add(new Square(new Vertex(100, 100, -100),
                         new Vertex(-100, 100, -100),
                         new Vertex(-100, -100, -100),
                         new Vertex(100, -100, -100),
-                        Color.ORANGE));
+                        earthBlue));
 
         List<Square> tris = new ArrayList<>();
-        
-        List<Square> current = init;
-        List<Square> next = new ArrayList<Square>();
 
-        for (int i = 0; i < 3; i++)
-        {
-            next.clear();
-            makeMoreTriangles(current, next);
-            List<Square> temp = current;
-            current = next;
-            next = temp;
+        // Grid resolution: each face is split directly into gridResolution x
+        // gridResolution sub-squares. This gives linear control over total
+        // triangle count (6 * gridResolution^2), unlike the old recursive
+        // 4x-per-pass subdivision, which could only produce 6*4^n squares --
+        // jumping straight from 384 to 1536 with no values in between.
+        // Tune this single number to dial in exactly the density you want:
+        //   gridResolution=4 -> 96 squares    gridResolution=7 -> 294 squares
+        //   gridResolution=5 -> 150 squares   gridResolution=8 -> 384 squares
+        //   gridResolution=6 -> 216 squares   gridResolution=9 -> 486 squares
+        int gridResolution = 12;
+        for (Square face : init) {
+            subdivideFace(face, gridResolution, tris);
         }
 
-        tris = current;
+
+
+        int[] arr = {   786, 787, 788, 789, 790, 791, 798
+        ,6, 18, 30, 42, 54, 66, 
+        140, 141, 727, 728, 729, 730, 737,  739, 740, 741, 744, 745, 746, 747, 748, 749, 751, 752, 753, 757, 758, 759, 760, 761, 763, 764, 765, 770, 771, 772, 773, 775, 776, 799,
+        119, 143, 273, 274, 284, 285, 286, 287, 440, 443, 454, 455, 466, 467, 478, 479, 491, 513, 514, 515, 525, 526, 527, 537, 538, 539, 549, 550, 551, 561, 562, 563, 573, 574, 575, 755, 767, 779, 801, 802, 812, 813, 824, 826, 838, 850, 851, 861, 862, 863,
+        0, 2, 3, 4, 5, 7, 8, 12, 13, 14, 15, 16, 17, 19, 20, 24, 25, 26, 27, 28, 29, 31, 36, 37, 38, 39, 40, 41, 49, 50, 51, 52, 53, 63, 64, 288, 289, 290, 301, 302, 313, 314, 326, 579, 580, 581, 583
+        , 444, 445, 446, 456, 457, 458, 468, 469, 470, 480, 481, 482, 504, 505, 506, 516, 517, 647, 659, 671
+        ,738, 750, 762, 447, 436, 492, 493, 506, 582, 595, 608, 620, 633, 646, 657, 670, 774
+        ,11, 22,  599, 611, 623, 635, 432, 433, 459, 471, 483, 494, 495, 507, 518, 519, 528, 529, 531
+            , 139, 262, 460, 461, 462, 472, 473, 484, 496, 497, 508, 726, 783, 784, 785, 520, 521, 533, 534, 453, 502
+    , 185, 201, 202, 208, 211, 213, 214, 215, 221, 223, 224, 225, 226, 227, 234, 236, 237, 238, 239, 249, 250, 251, 261, 263, 272, 275, 283, 849, 860,
+    177, 178, 188, 239, 555, 556, 557, 559, 560, 568, 569, 570, 571, 572, 548,
+    144, 145, 148, 156, 157, 158, 161, 168, 169, 282,  180, 396, 408, 409, 420, 421, 422, 423, 548, 672, 684, 685, 696, 697, 708, 709, 710
+    };
+        
+
+        for (int i: arr)
+        {
+        tris.get(i).color = earthGreen;
+        }
+
+        // Reapply any colors toggled by clicking. `tris` was just rebuilt
+        // from scratch above, so without this, every repaint would forget
+        // every toggle and fall back to earthBlue (or the two hardcoded
+        // earthGreen indices above).
+        for (int idx : toggledGreen) {
+            if (idx >= 0 && idx < tris.size()) {
+                tris.get(idx).color = earthGreen;
+            }
+        }
 
         double targetRadius = Math.sqrt(30000);
 java.util.Set<Vertex> warped =
@@ -251,24 +291,10 @@ for (int q = 0; q < zBuffer.length; q++) {
 
     };
 
-    renderPanel.addMouseMotionListener(new MouseMotionListener() {
-            @Override
-            public void mouseDragged(MouseEvent e) {
-                double yi = 180.0 / renderPanel.getHeight();
-                double xi = 180.0 / renderPanel.getWidth();
-                x[0] = (int) (e.getX() * xi);
-                y[0] = -(int) (e.getY() * yi);
-                renderPanel.repaint();
-            }
-
-            @Override
-            public void mouseMoved(MouseEvent e) {
-
-            }
-
-        });
-
-        renderPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+    // Mouse dragging no longer drives rotation -- only clicking, to print
+    // the clicked triangle's index. Rotation is now driven exclusively by
+    // the two sliders added below.
+    renderPanel.addMouseListener(new java.awt.event.MouseAdapter() {
     @Override
     public void mouseClicked(MouseEvent e) {
         if (renderPanel.indexBuffer == null) return; // not painted yet
@@ -278,15 +304,48 @@ for (int q = 0; q < zBuffer.length; q++) {
         int idx = renderPanel.indexBuffer[cy * renderPanel.bufferWidth + cx];
         if (idx == -1) {
             System.out.println("No triangle at (" + cx + ", " + cy + ")");
-        } else {
-            System.out.println("Clicked triangle index: " + idx);
+            return;
         }
+
+        // Toggle: if this index was already marked green, un-mark it
+        // (falls back to earthBlue / whatever it would otherwise be);
+        // otherwise mark it green. Set.remove() returns true only if the
+        // element was present, which is what makes this a clean toggle.
+        if (!renderPanel.toggledGreen.remove(idx)) {
+            renderPanel.toggledGreen.add(idx);
+        }
+
+        // Print the full, current list of toggled indices on every click --
+        // TreeSet keeps them in sorted order, so this is ready to copy
+        // straight into a hardcoded ArrayList/int[] later.
+        System.out.println("Clicked index: " + idx + "  |  All toggled indices: " + renderPanel.toggledGreen);
+
+        renderPanel.repaint();
     }
 });
 
-    
+    // Horizontal rotation slider, placed along the bottom.
+    // Range 0-360 degrees maps directly onto the "heading" value (x[0])
+    // already used by paintComponent's headingTransform.
+    JSlider headingSlider = new JSlider(JSlider.HORIZONTAL, 0, 360, 0);
+    headingSlider.addChangeListener(e -> {
+        x[0] = headingSlider.getValue();
+        renderPanel.repaint();
+    });
+
+    // Vertical rotation slider, placed along the right side.
+    // Range -90 to 90 degrees maps onto the "pitch" value (y[0]) used by
+    // paintComponent's pitchTransform. JSlider is oriented VERTICAL so it
+    // visually runs top-to-bottom along the right edge of the window.
+    JSlider pitchSlider = new JSlider(JSlider.VERTICAL, -90, 90, 0);
+    pitchSlider.addChangeListener(e -> {
+        y[0] = pitchSlider.getValue();
+        renderPanel.repaint();
+    });
 
     pane.add(renderPanel, BorderLayout.CENTER);
+    pane.add(headingSlider, BorderLayout.SOUTH);
+    pane.add(pitchSlider, BorderLayout.EAST);
 
     frame.setSize(600, 600);
     frame.setVisible((true));
@@ -321,27 +380,38 @@ for (int q = 0; q < zBuffer.length; q++) {
         return new Color(red, green, blue);
 }
 
-public static void makeMoreTriangles(List<Square> init, List<Square> out)
-{
-    for (Square t : init) {
-                Vertex m1 =
-                        new Vertex((t.v1.x + t.v2.x) / 2, (t.v1.y + t.v2.y) / 2, (t.v1.z + t.v2.z) / 2);
-                Vertex m2 =
-                        new Vertex((t.v2.x + t.v3.x) / 2, (t.v2.y + t.v3.y) / 2, (t.v2.z + t.v3.z) / 2);
-                Vertex m3 =
-                        new Vertex((t.v3.x + t.v4.x) / 2, (t.v3.y + t.v4.y) / 2, (t.v3.z + t.v4.z) / 2);
-                Vertex m4 =
-                        new Vertex((t.v1.x + t.v4.x) / 2, (t.v1.y + t.v4.y) / 2, (t.v1.z + t.v4.z) / 2);
-                Vertex center =
-                        new Vertex((t.v1.x + t.v3.x) / 2, (t.v1.y + t.v3.y) / 2, (t.v1.z + t.v3.z) / 2);
-                    
-                out.add(new Square(t.v1, m1, center, m4, t.color));
-                out.add(new Square(m1, t.v2, m2, center, t.color));
-                out.add(new Square(center, m2, t.v3, m3, t.color));
-                out.add(new Square(m4, center, m3, t.v4, t.color));
-            }
+// Bilinear interpolation across a flat quad. (u, v) each range 0..1, with
+// v1=(0,0), v2=(1,0), v3=(1,1), v4=(0,1) in that parameter space -- matching
+// the corner order already used everywhere else (v1,v2,v3,v4 going around
+// the quad). This lets us find any point on the face directly, instead of
+// only ever being able to find exact midpoints via recursive halving.
+static Vertex bilerp(Vertex v1, Vertex v2, Vertex v3, Vertex v4, double u, double v) {
+    double x = (1-u)*(1-v)*v1.x + u*(1-v)*v2.x + u*v*v3.x + (1-u)*v*v4.x;
+    double y = (1-u)*(1-v)*v1.y + u*(1-v)*v2.y + u*v*v3.y + (1-u)*v*v4.y;
+    double z = (1-u)*(1-v)*v1.z + u*(1-v)*v2.z + u*v*v3.z + (1-u)*v*v4.z;
+    return new Vertex(x, y, z);
+}
 
-      
+// Splits a single flat face into an n x n grid of sub-squares in one pass,
+// using bilerp to compute every grid point directly. This produces exactly
+// the same flat-grid positions that repeated recursive halving would at
+// this resolution -- it's just computed directly instead of built up
+// through log2(n) doubling steps, which is what gives linear (not only
+// powers-of-4) control over subdivision density.
+static void subdivideFace(Square face, int n, List<Square> out) {
+    Vertex[][] grid = new Vertex[n + 1][n + 1];
+    for (int i = 0; i <= n; i++) {
+        for (int j = 0; j <= n; j++) {
+            double u = (double) i / n;
+            double v = (double) j / n;
+            grid[i][j] = bilerp(face.v1, face.v2, face.v3, face.v4, u, v);
+        }
+    }
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            out.add(new Square(grid[i][j], grid[i+1][j], grid[i+1][j+1], grid[i][j+1], face.color));
+        }
+    }
 }
 
 
@@ -374,7 +444,9 @@ public static void rasterizeTriangle(Vertex v1, Vertex v2, Vertex v3, int x, int
     
 }
 
+
+
+
+
+
 }
-
-
-
