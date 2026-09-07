@@ -4,24 +4,19 @@ import java.awt.Container;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
 
-public class main {
+public class base_cube {
     static int[] x = {0};
     static int[] y = {0};
 
     static class RenderPanel extends JPanel {
         int[] indexBuffer;
         int bufferWidth, bufferHeight;
-        // Persists across repaints -- tracks which triangle indices have
-        // been clicked and toggled to earthGreen. Without storing this
-        // outside paintComponent, every repaint (e.g. every slider move)
-        // rebuilds `tris` from scratch and would silently wipe out any
-        // manual color toggles.
-        java.util.Set<Integer> toggledGreen = new java.util.TreeSet<>();
 
 
 
@@ -38,20 +33,17 @@ public static void main(String[] args) {
         BufferedImage img = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_ARGB);
             ArrayList<Square> init = new ArrayList<>();
             //Triangle boilerplate----------------------------------
-            Color earthBlue = new Color(52, 102, 235);
-            Color earthGreen = new Color(14, 204, 52);
-
         init.add(new Square(new Vertex(100, 100, 100),
                         new Vertex(100, 100, -100),
                         new Vertex(100, -100, -100),
                         new Vertex(100, -100, 100), 
-                        earthBlue));
+                        Color.WHITE));
 
         init.add(new Square(new Vertex(-100, 100, 100),
         new Vertex(-100, 100, -100),
         new Vertex(-100, -100, -100),
         new Vertex(-100, -100, 100), 
-        earthBlue));
+        Color.BLUE));
 
 
 
@@ -59,84 +51,42 @@ public static void main(String[] args) {
                         new Vertex(-100, 100, 100),
                         new Vertex(-100, 100, -100),
                         new Vertex(100, 100, -100),
-                        earthBlue));
+                        Color.RED));
 
      init.add(new Square(new Vertex(100, -100, 100),
                         new Vertex(-100, -100, 100),
                         new Vertex(-100, -100, -100),
                         new Vertex(100, -100, -100),
-                        earthBlue));
+                        Color.GREEN));
 
 
      init.add(new Square(new Vertex(100, 100, 100),
                         new Vertex(-100, 100, 100),
                         new Vertex(-100, -100, 100),
                         new Vertex(100, -100, 100),
-                        earthBlue));
+                        Color.YELLOW));
 
     init.add(new Square(new Vertex(100, 100, -100),
                         new Vertex(-100, 100, -100),
                         new Vertex(-100, -100, -100),
                         new Vertex(100, -100, -100),
-                        earthBlue));
+                        Color.ORANGE));
 
         List<Square> tris = new ArrayList<>();
-        // manipulation of grid resolution. But, messes up coloring scheme. 
-        int gridResolution = 12;
-        for (Square face : init) {
-            subdivideFace(face, gridResolution, tris);
-        }
-
-
-            // this is the coloring of the earth (done by hand).
-        int[] arr = {   786, 787, 788, 789, 790, 791, 798
-        ,6, 18, 30, 42, 54, 66, 
-        140, 141, 727, 728, 729, 730, 737,  739, 740, 741, 744, 745, 746, 747, 748, 749, 751, 752, 753, 757, 758, 759, 760, 761, 763, 764, 765, 770, 771, 772, 773, 775, 776, 799,
-        119, 143, 273, 274, 284, 285, 286, 287, 440, 443, 454, 455, 466, 467, 478, 479, 491, 513, 514, 515, 525, 526, 527, 537, 538, 539, 549, 550, 551, 561, 562, 563, 573, 574, 575, 755, 767, 779, 801, 802, 812, 813, 824, 826, 838, 850, 851, 861, 862, 863,
-        0, 2, 3, 4, 5, 7, 8, 12, 13, 14, 15, 16, 17, 19, 20, 24, 25, 26, 27, 28, 29, 31, 36, 37, 38, 39, 40, 41, 49, 50, 51, 52, 53, 63, 64, 288, 289, 290, 301, 302, 313, 314, 326, 579, 580, 581, 583
-        , 444, 445, 446, 456, 457, 458, 468, 469, 470, 480, 481, 482, 504, 505, 506, 516, 517, 647, 659, 671
-        ,738, 750, 762, 447, 436, 492, 493, 506, 582, 595, 608, 620, 633, 646, 657, 670, 774
-        ,11, 22,  599, 611, 623, 635, 432, 433, 459, 471, 483, 494, 495, 507, 518, 519, 528, 529, 531
-            , 139, 262, 460, 461, 462, 472, 473, 484, 496, 497, 508, 726, 783, 784, 785, 520, 521, 533, 534, 453, 502
-    , 185, 201, 202, 208, 211, 213, 214, 215, 221, 223, 224, 225, 226, 227, 234, 236, 237, 238, 239, 249, 250, 251, 261, 263, 272, 275, 283, 849, 860,
-    177, 178, 188, 239, 555, 556, 557, 559, 560, 568, 569, 570, 571, 572, 548,
-    144, 145, 148, 156, 157, 158, 161, 168, 169, 282,  180, 396, 408, 409, 420, 421, 422, 423, 548, 672, 684, 685, 696, 697, 708, 709, 710
-    };
         
+        List<Square> current = init;
+        List<Square> next = new ArrayList<Square>();
 
-        for (int i: arr)
+        for (int i = 0; i < 0; i++)
         {
-        tris.get(i).color = earthGreen;
+            next.clear();
+            makeMoreTriangles(current, next);
+            List<Square> temp = current;
+            current = next;
+            next = temp;
         }
 
-        for (int idx : toggledGreen) {
-            if (idx >= 0 && idx < tris.size()) {
-                tris.get(idx).color = earthGreen;
-            }
-        }
-
-        double targetRadius = Math.sqrt(30000);
-java.util.Set<Vertex> warped =
-    java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
-
-for (Square t : tris) {
-    for (Vertex v : new Vertex[]{t.v1, t.v2, t.v3, t.v4}) {
-        if (!warped.add(v)) continue; // already warped this exact object -- skip
-
-        double cx = v.x / 100.0;
-        double cy = v.y / 100.0;
-        double cz = v.z / 100.0;
-
-        double x2 = cx * cx, y2 = cy * cy, z2 = cz * cz;
-        double wx = cx * Math.sqrt(1 - y2 / 2 - z2 / 2 + y2 * z2 / 3);
-        double wy = cy * Math.sqrt(1 - z2 / 2 - x2 / 2 + z2 * x2 / 3);
-        double wz = cz * Math.sqrt(1 - x2 / 2 - y2 / 2 + x2 * y2 / 3);
-
-        v.x = wx * targetRadius;
-        v.y = wy * targetRadius;
-        v.z = wz * targetRadius;
-    }
-}
+        tris = current;
             //Triangle boilerplate----------------------------------
 
             
@@ -170,11 +120,25 @@ for (Square t : tris) {
         g2.setColor(Color.black);
         g2.fillRect(0, 0, getWidth(), getHeight());
     
+        
+                     // The generated shape is centered on the origin (0, 0, 0), and we will do rotation around the origin later.
+        // g2.translate(getWidth() / 2, getHeight() / 2);
+        // g2.setColor(Color.white);
+        // for (Triangle t : tris) {
+        //     Path2D path = new Path2D.Double();
+        //     path.moveTo(t.v1.x, t.v1.y);
+        //     path.lineTo(t.v2.x, t.v2.y);
+        //     path.lineTo(t.v3.x, t.v3.y);
+        //     path.closePath();
+        //     g2.draw(path);
+        // }
+    
+       // g2.translate(getWidth() / 2, getHeight() / 2);
 g2.setColor(Color.WHITE);
 
                     double[] zBuffer = new double[img.getWidth() * img.getHeight()];
                     indexBuffer = new int[img.getWidth() * img.getHeight()];
-// initialize array at minimum depth. Talk about z - buffering here
+// initialize array with extremely far away depths
 for (int q = 0; q < zBuffer.length; q++) {
     zBuffer[q] = Double.NEGATIVE_INFINITY;
     indexBuffer[q] = -1;
@@ -264,8 +228,24 @@ for (int q = 0; q < zBuffer.length; q++) {
 
     };
 
- 
-    renderPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+    renderPanel.addMouseMotionListener(new MouseMotionListener() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                double yi = 180.0 / renderPanel.getHeight();
+                double xi = 180.0 / renderPanel.getWidth();
+                x[0] = (int) (e.getX() * xi);
+                y[0] = -(int) (e.getY() * yi);
+                renderPanel.repaint();
+            }
+
+            @Override
+            public void mouseMoved(MouseEvent e) {
+
+            }
+
+        });
+
+        renderPanel.addMouseListener(new java.awt.event.MouseAdapter() {
     @Override
     public void mouseClicked(MouseEvent e) {
         if (renderPanel.indexBuffer == null) return; // not painted yet
@@ -275,41 +255,15 @@ for (int q = 0; q < zBuffer.length; q++) {
         int idx = renderPanel.indexBuffer[cy * renderPanel.bufferWidth + cx];
         if (idx == -1) {
             System.out.println("No triangle at (" + cx + ", " + cy + ")");
-            return;
+        } else {
+            System.out.println("Clicked triangle index: " + idx);
         }
-
-       
-        if (!renderPanel.toggledGreen.remove(idx)) {
-            renderPanel.toggledGreen.add(idx);
-        }
-
-       //index spam
-        System.out.println("Clicked index: " + idx + "  |  All toggled indices: " + renderPanel.toggledGreen);
-
-        renderPanel.repaint();
     }
 });
 
-    //hori slider
-    JSlider headingSlider = new JSlider(JSlider.HORIZONTAL, 0, 360, 0);
-    headingSlider.addChangeListener(e -> {
-        x[0] = headingSlider.getValue();
-        renderPanel.repaint();
-    });
-
-    // Vertical rotation slider, placed along the right side.
-    // Range -90 to 90 degrees maps onto the "pitch" value (y[0]) used by
-    // paintComponent's pitchTransform. JSlider is oriented VERTICAL so it
-    // visually runs top-to-bottom along the right edge of the window.
-    JSlider pitchSlider = new JSlider(JSlider.VERTICAL, -90, 90, 0);
-    pitchSlider.addChangeListener(e -> {
-        y[0] = pitchSlider.getValue();
-        renderPanel.repaint();
-    });
+    
 
     pane.add(renderPanel, BorderLayout.CENTER);
-    pane.add(headingSlider, BorderLayout.SOUTH);
-    pane.add(pitchSlider, BorderLayout.EAST);
 
     frame.setSize(600, 600);
     frame.setVisible((true));
@@ -324,7 +278,7 @@ for (int q = 0; q < zBuffer.length; q++) {
         Vertex V1V3 = new Vertex(C.x - A.x,C.y - A.y,C.z - A.z);
         Vertex V1P = new Vertex(p.x - A.x,p.y - A.y,p.z - A.z);
 
-        // if the cross product of vector V1V2 and vector V1V3 is the same as the one of vector V1V2 and vector V1p they are on the same side
+        // If the cross product of vector V1V2 and vector V1V3 is the same as the one of vector V1V2 and vector V1p, they are on the same side.
         // We only need to judge the direction of z
         double V1V2CrossV1V3 = V1V2.x * V1V3.y - V1V3.x * V1V2.y;
         double V1V2CrossP = V1V2.x * V1P.y - V1P.x * V1V2.y;
@@ -332,41 +286,46 @@ for (int q = 0; q < zBuffer.length; q++) {
         return V1V2CrossV1V3 * V1V2CrossP >= 0;
 }
  public static Color getShade(Color color, double shade) {
+      // no shader applied
+    int red = color.getRed();
+    int green = color.getGreen();
+    int blue = color.getBlue();
 
-        double redLinear = Math.pow(color.getRed(), 2.2) * shade;
-        double greenLinear = Math.pow(color.getGreen(), 2.2) * shade;
-        double blueLinear = Math.pow(color.getBlue(), 2.2) * shade;
 
-        int red = (int) Math.pow(redLinear, 1 / 2.2);
-        int green = (int) Math.pow(greenLinear, 1 / 2.2);
-        int blue = (int) Math.pow(blueLinear, 1 / 2.2);
-   
-       
 
-        return new Color(red, green, blue);
+    return new Color(red, green, blue);
 }
 
-static Vertex bilerp(Vertex v1, Vertex v2, Vertex v3, Vertex v4, double u, double v) {
-    double x = (1-u)*(1-v)*v1.x + u*(1-v)*v2.x + u*v*v3.x + (1-u)*v*v4.x;
-    double y = (1-u)*(1-v)*v1.y + u*(1-v)*v2.y + u*v*v3.y + (1-u)*v*v4.y;
-    double z = (1-u)*(1-v)*v1.z + u*(1-v)*v2.z + u*v*v3.z + (1-u)*v*v4.z;
-    return new Vertex(x, y, z);
-}
+public static void makeMoreTriangles(List<Square> init, List<Square> out)
+{
+    for (Square t : init) {
+                Vertex m1 =
+                        new Vertex((t.v1.x + t.v2.x) / 2, (t.v1.y + t.v2.y) / 2, (t.v1.z + t.v2.z) / 2);
+                Vertex m2 =
+                        new Vertex((t.v2.x + t.v3.x) / 2, (t.v2.y + t.v3.y) / 2, (t.v2.z + t.v3.z) / 2);
+                Vertex m3 =
+                        new Vertex((t.v3.x + t.v4.x) / 2, (t.v3.y + t.v4.y) / 2, (t.v3.z + t.v4.z) / 2);
+                Vertex m4 =
+                        new Vertex((t.v1.x + t.v4.x) / 2, (t.v1.y + t.v4.y) / 2, (t.v1.z + t.v4.z) / 2);
+                Vertex center =
+                        new Vertex((t.v1.x + t.v3.x) / 2, (t.v1.y + t.v3.y) / 2, (t.v1.z + t.v3.z) / 2);
+                    
+                out.add(new Square(t.v1, m1, center, m4, t.color));
+                out.add(new Square(m1, t.v2, m2, center, t.color));
+                out.add(new Square(center, m2, t.v3, m3, t.color));
+                out.add(new Square(m4, center, m3, t.v4, t.color));
+            }
 
-static void subdivideFace(Square face, int n, List<Square> out) {
-    Vertex[][] grid = new Vertex[n + 1][n + 1];
-    for (int i = 0; i <= n; i++) {
-        for (int j = 0; j <= n; j++) {
-            double u = (double) i / n;
-            double v = (double) j / n;
-            grid[i][j] = bilerp(face.v1, face.v2, face.v3, face.v4, u, v);
+       for (Square t : out) {
+                for (Vertex v : new Vertex[]{t.v1, t.v2, t.v3, t.v4}) {
+                    double l = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z) / Math.sqrt(30000);
+                    v.x /= l;
+                    v.y /= l;
+                    v.z /= l;
+                }
         }
-    }
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            out.add(new Square(grid[i][j], grid[i+1][j], grid[i+1][j+1], grid[i][j+1], face.color));
-        }
-    }
+    
+
 }
 
 
@@ -384,7 +343,7 @@ public static void rasterizeTriangle(Vertex v1, Vertex v2, Vertex v3, int x, int
                                 double w3 = 1 - w1 - w2;
                                 double depth = w1 * v1.z + w2 * v2.z + w3 * v3.z;
 
-                                //barycentric coordinates used to determine which triagles are in front and thus should be rendered.
+
                                 int zIndex = y * img.getWidth() + x;
                                 if (zBuffer[zIndex] < depth) {
                                 img.setRGB(x, y, t.color.getRGB());
@@ -399,9 +358,8 @@ public static void rasterizeTriangle(Vertex v1, Vertex v2, Vertex v3, int x, int
     
 }
 
-
-
-
-
-
 }
+
+
+
+
